@@ -6,8 +6,7 @@ DB = postgres_db
 .PHONY: setup build up down logs shell-front shell-back prisma-init prisma-migrate install-deps
 
 help:
-	@echo "make setup               - первый запуск: сборка, поднятие контейнеров + установка зависимостей"
-	@echo "make install-deps        - установить все зависимости во фронт и бэк"
+	@echo "make setup               - первый запуск: сборка, поднятие контейнеров"
 	@echo "make up                  - запуск контейнеров в фоне"
 	@echo "make down                - остановить проект и удалить тома"
 	@echo "make logs                - показать логи всех контейнеров"
@@ -17,8 +16,8 @@ help:
 	@echo "make prisma-migrate name=<name> - создать миграцию Prisma с указанным именем"
 
 # setup — для первого запуска проекта
-# собирает образы, поднимает контейнеры и устанавливает зависимости
-setup: build up install-deps
+# собирает образы, поднимает контейнеры 
+setup: build up 
 
 # build — собирает образы всех контейнеров
 build:
@@ -52,9 +51,4 @@ prisma-init:
 prisma-migrate:
 	docker-compose exec $(BACKEND) npx prisma migrate dev --name $(name)
 
-# install-deps — установка всех зависимостей
-install-deps:
-	@echo "Устанавливаем зависимости для backend..."
-	docker-compose exec $(BACKEND) npm install
-	@echo "Устанавливаем зависимости для frontend..."
-	docker-compose exec $(FRONTEND) npm install
+
