@@ -45,6 +45,8 @@ Vite 7.x
 
 react-router-dom 6.x
 
+axios
+
 Dev Tools
 
 Docker & Docker Compose
