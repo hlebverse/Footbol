@@ -1,3 +1,21 @@
+Вот короткий чек-лист, чтобы после клонирования проекта сразу запустить фронт и бэк без проблем:
+
+1️⃣ Клонируем проект
+
+cd backend
+npm install
+
+cd ../frontend
+npm install
+
+3️⃣ Настройка переменных окружения
+
+Создайте файл .env в папке backend (и по необходимости во фронте).
+Пример для бэка:
+
+PORT=8000
+DATABASE_URL=postgresql://postgres:password@postgres_db:5432/db_name
+
 Football News Project
 
 Full-stack project: новостной сайт о футболе с backend на Node.js/Express и frontend на React + Vite, база данных PostgreSQL.
