@@ -17,7 +17,7 @@ help:
 
 # setup — для первого запуска проекта
 # собирает образы, поднимает контейнеры 
-setup: build up 
+setup: build up prisma-generate
 
 # build — собирает образы всех контейнеров
 build:
@@ -51,4 +51,7 @@ prisma-init:
 prisma-migrate:
 	docker-compose exec $(BACKEND) npx prisma migrate dev --name $(name)
 
+# генеерация ключа призмы
 
+prisma-generate:
+	docker-compose exec $(BACKEND) npx prisma generate
