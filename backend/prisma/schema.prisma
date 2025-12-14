@@ -1,15 +1,89 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// prisma/schema.prisma
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
+
+  // ВАЖНО: для Docker (Linux + Alpine)
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+/*
+  =====================
+  НОВОСТИ
+  =====================
+*/
+model News {
+  // Паспорт записи
+  id        Int      @id @default(autoincrement())
+
+  // Данные новости
+  title     String
+  content   String
+
+  // Дата создания
+  createdAt DateTime @default(now())
+}
+
+/*
+  =====================
+  СБОРНЫЕ
+  =====================
+*/
+model NationalTeam {
+  // Паспорт записи
+  id      Int     @id @default(autoincrement())
+
+  // Название сборной
+  name    String  @unique
+
+  // Страна
+  country String
+
+  // Игроки в сборной
+  players Player[]
+}
+
+/*
+  =====================
+  ИГРОКИ
+  =====================
+*/
+model Player {
+  // Паспорт записи
+  id        Int    @id @default(autoincrement())
+
+  // Данные игрока
+  name      String
+  position  String
+  age       Int
+
+  // Связь со сборной
+  teamId    Int
+  team      NationalTeam @relation(fields: [teamId], references: [id])
+}
+
+/*
+  =====================
+  МАТЧИ
+  =====================
+*/
+model Match {
+  // Паспорт записи
+  id         Int      @id @default(autoincrement())
+
+  // Команды
+  homeTeam   String
+  awayTeam   String
+
+  // Счёт
+  homeScore  Int
+  awayScore  Int
+
+  // Дата матча
+  matchDate  DateTime
 }
