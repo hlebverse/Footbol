@@ -1,9 +1,5 @@
-// prisma/schema.prisma
-
 generator client {
-  provider = "prisma-client-js"
-
-  // ВАЖНО: для Docker (Linux + Alpine)
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
@@ -12,78 +8,51 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/*
-  =====================
-  НОВОСТИ
-  =====================
-*/
+// 1. НОВОСТИ (Без изменений)
 model News {
-  // Паспорт записи
   id        Int      @id @default(autoincrement())
-
-  // Данные новости
   title     String
   content   String
-
-  // Дата создания
   createdAt DateTime @default(now())
 }
 
-/*
-  =====================
-  СБОРНЫЕ
-  =====================
-*/
+// 2. СБОРНЫЕ (Добавили связи с матчами)
 model NationalTeam {
-  // Паспорт записи
-  id      Int     @id @default(autoincrement())
-
-  // Название сборной
-  name    String  @unique
-
-  // Страна
+  id      Int      @id @default(autoincrement())
+  name    String   @unique
   country String
-
-  // Игроки в сборной
+  
+  // Связь с игроками
   players Player[]
+
+  // Связь с матчами (где команда дома и где в гостях)
+  homeMatches Match[] @relation("HomeMatches")
+  awayMatches Match[] @relation("AwayMatches")
 }
 
-/*
-  =====================
-  ИГРОКИ
-  =====================
-*/
+// 3. ИГРОКИ (Без изменений)
 model Player {
-  // Паспорт записи
-  id        Int    @id @default(autoincrement())
-
-  // Данные игрока
-  name      String
-  position  String
-  age       Int
-
-  // Связь со сборной
-  teamId    Int
-  team      NationalTeam @relation(fields: [teamId], references: [id])
+  id       Int          @id @default(autoincrement())
+  name     String
+  position String
+  age      Int
+  teamId   Int
+  team     NationalTeam @relation(fields: [teamId], references: [id])
 }
 
-/*
-  =====================
-  МАТЧИ
-  =====================
-*/
+// 4. МАТЧИ (ИСПРАВЛЕНО: теперь ссылки на NationalTeam)
 model Match {
-  // Паспорт записи
   id         Int      @id @default(autoincrement())
 
-  // Команды
-  homeTeam   String
-  awayTeam   String
+  // Связь для Домашней команды
+  homeTeamId Int
+  homeTeam   NationalTeam @relation("HomeMatches", fields: [homeTeamId], references: [id])
 
-  // Счёт
+  // Связь для Гостевой команды
+  awayTeamId Int
+  awayTeam   NationalTeam @relation("AwayMatches", fields: [awayTeamId], references: [id])
+
   homeScore  Int
   awayScore  Int
-
-  // Дата матча
   matchDate  DateTime
 }

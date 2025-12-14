@@ -1,40 +1,70 @@
 const express = require("express");
 const router = express.Router();
-const prisma = require("./prisma");
+const prisma = require("./prisma"); // Подключаем твой клиент
 
-router.get("/add-team", (req, res) => {
-  res.send(`
-    <h1>POST endpoint</h1>
-    <pre>{ "name": "Сборная Франции", "country": "Франция" }</pre>
-  `);
+// 1. GET - Список всех команд
+router.get("/", async (req, res) => {
+  try {
+    const teams = await prisma.nationalTeam.findMany({
+      orderBy: { id: "desc" },
+    });
+    res.json(teams);
+  } catch (e) {
+    res.status(500).json({ error: "Ошибка сервера" });
+  }
 });
 
-router.post("/add-team", async (req, res) => {
+// 2. POST - Добавить команду
+router.post("/", async (req, res) => {
   try {
     const { name, country } = req.body;
-
-    if (!name || !country) {
-      return res.status(400).json({
-        error: "Поля 'name' и 'country' обязательны",
-      });
-    }
+    if (!name || !country)
+      return res.status(400).json({ error: "Нужно имя и страна" });
 
     const team = await prisma.nationalTeam.create({
-      data: {
-        name,
-        country,
-      },
+      data: { name, country },
     });
+    res.json(team);
+  } catch (e) {
+    // P2002 - ошибка уникальности (такая команда уже есть)
+    if (e.code === "P2002")
+      return res.status(400).json({ error: "Такая команда уже есть" });
+    res.status(500).json({ error: "Ошибка создания" });
+  }
+});
 
-    console.log("✅ Сборная создана:", team);
+// 3. PUT - Редактировать команду (:id)
+router.put("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, country } = req.body;
 
-    res.status(201).json({
-      message: "Сборная успешно добавлена",
-      team,
+    const updatedTeam = await prisma.nationalTeam.update({
+      where: { id: Number(id) },
+      data: { name, country },
     });
-  } catch (error) {
-    console.error("❌ Ошибка:", error);
-    res.status(500).json({ error: "Ошибка сервера" });
+    res.json(updatedTeam);
+  } catch (e) {
+    res.status(500).json({ error: "Не удалось обновить" });
+  }
+});
+
+// 4. DELETE - Удалить команду (:id)
+router.delete("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.nationalTeam.delete({
+      where: { id: Number(id) },
+    });
+    res.json({ success: true });
+  } catch (e) {
+    // P2003 - ошибка связей (нельзя удалить команду, если в ней есть игроки или матчи)
+    if (e.code === "P2003") {
+      return res
+        .status(400)
+        .json({ error: "Нельзя удалить: у команды есть игроки или матчи" });
+    }
+    res.status(500).json({ error: "Ошибка удаления" });
   }
 });
 

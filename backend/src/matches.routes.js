@@ -2,56 +2,80 @@ const express = require("express");
 const router = express.Router();
 const prisma = require("./prisma");
 
-router.get("/add-match", (req, res) => {
-  res.send(`
-    <h1>POST endpoint</h1>
-    <pre>
-{
-  "homeTeam": "France",
-  "awayTeam": "Germany",
-  "homeScore": 2,
-  "awayScore": 1,
-  "matchDate": "2025-06-01T18:00:00Z"
-}
-    </pre>
-  `);
+// GET
+router.get("/", async (req, res) => {
+  try {
+    const matches = await prisma.match.findMany({
+      orderBy: { matchDate: "desc" },
+      include: {
+        homeTeam: true, // Подтягиваем названия команд
+        awayTeam: true,
+      },
+    });
+    res.json(matches);
+  } catch (e) {
+    res.status(500).json({ error: "Ошибка сервера" });
+  }
 });
 
-router.post("/add-match", async (req, res) => {
+// POST
+router.post("/", async (req, res) => {
   try {
-    const { homeTeam, awayTeam, homeScore, awayScore, matchDate } = req.body;
+    const { homeTeamId, awayTeamId, homeScore, awayScore, matchDate } =
+      req.body;
 
-    if (
-      !homeTeam ||
-      !awayTeam ||
-      homeScore == null ||
-      awayScore == null ||
-      !matchDate
-    ) {
-      return res.status(400).json({
-        error: "Все поля обязательны",
-      });
-    }
+    // Простая валидация
+    if (!homeTeamId || !awayTeamId)
+      return res.status(400).json({ error: "Выберите команды" });
 
     const match = await prisma.match.create({
       data: {
-        homeTeam,
-        awayTeam,
-        homeScore: parseInt(homeScore),
-        awayScore: parseInt(awayScore),
+        homeTeamId: Number(homeTeamId),
+        awayTeamId: Number(awayTeamId),
+        homeScore: Number(homeScore),
+        awayScore: Number(awayScore),
+        matchDate: new Date(matchDate),
+      },
+      include: { homeTeam: true, awayTeam: true },
+    });
+    res.json(match);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Ошибка создания" });
+  }
+});
+
+// PUT
+router.put("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { homeTeamId, awayTeamId, homeScore, awayScore, matchDate } =
+      req.body;
+
+    const updated = await prisma.match.update({
+      where: { id: Number(id) },
+      data: {
+        homeTeamId: Number(homeTeamId),
+        awayTeamId: Number(awayTeamId),
+        homeScore: Number(homeScore),
+        awayScore: Number(awayScore),
         matchDate: new Date(matchDate),
       },
     });
+    res.json(updated);
+  } catch (e) {
+    res.status(500).json({ error: "Ошибка обновления" });
+  }
+});
 
-    console.log("✅ Матч создан:", match);
-
-    res.status(201).json({
-      message: "Матч успешно добавлен",
-      match,
-    });
-  } catch (error) {
-    console.error("❌ Ошибка:", error);
-    res.status(500).json({ error: "Ошибка сервера" });
+// DELETE
+router.delete("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.match.delete({ where: { id: Number(id) } });
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: "Ошибка удаления" });
   }
 });
 

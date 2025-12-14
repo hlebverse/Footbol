@@ -2,42 +2,55 @@ const express = require("express");
 const router = express.Router();
 const prisma = require("./prisma");
 
-// GET-заглушка
-router.get("/add-news", (req, res) => {
-  res.send(`
-    <h1>POST endpoint</h1>
-    <p>Отправьте POST запрос с JSON:</p>
-    <pre>{ "title": "Заголовок", "content": "Текст новости" }</pre>
-  `);
+// GET
+router.get("/", async (req, res) => {
+  try {
+    const news = await prisma.news.findMany({ orderBy: { id: "desc" } });
+    res.json(news);
+  } catch (e) {
+    res.status(500).json({ error: "Ошибка сервера" });
+  }
 });
 
 // POST
-router.post("/add-news", async (req, res) => {
+router.post("/", async (req, res) => {
   try {
     const { title, content } = req.body;
+    if (!title) return res.status(400).json({ error: "Нет заголовка" });
 
-    if (!title || !content) {
-      return res.status(400).json({
-        error: "Поля 'title' и 'content' обязательны",
-      });
-    }
-
-    const news = await prisma.news.create({
-      data: {
-        title,
-        content,
-      },
+    const item = await prisma.news.create({
+      data: { title, content },
     });
+    res.json(item);
+  } catch (e) {
+    res.status(500).json({ error: "Ошибка создания" });
+  }
+});
 
-    console.log("✅ Новость создана:", news);
+// PUT
+router.put("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, content } = req.body;
 
-    res.status(201).json({
-      message: "Новость успешно добавлена",
-      news,
+    const updated = await prisma.news.update({
+      where: { id: Number(id) },
+      data: { title, content },
     });
-  } catch (error) {
-    console.error("❌ Ошибка:", error);
-    res.status(500).json({ error: "Ошибка сервера" });
+    res.json(updated);
+  } catch (e) {
+    res.status(500).json({ error: "Ошибка обновления" });
+  }
+});
+
+// DELETE
+router.delete("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.news.delete({ where: { id: Number(id) } });
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: "Ошибка удаления" });
   }
 });
 

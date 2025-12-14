@@ -1,72 +1,70 @@
 const express = require("express");
 const cors = require("cors");
-require("dotenv").config();
+require("dotenv").config(); // Загружаем переменные окружения из .env
 
 const app = express();
 const port = process.env.PORT || 8000;
 
 // ==================
-// Middleware
+// 1. Middleware (Настройки)
 // ==================
-app.use(cors());
-app.use(express.json()); // обязательно для POST JSON
-
-// ==================
-// Импорт маршрутов
-// ==================
-
-// POST routes
-const newsPostRoute = require("./src/news.routes"); // /add-news
-const teamsPostRoute = require("./src/teams.routes"); // /add-team
-const playersPostRoute = require("./src/players.routes"); // /add-player
-const matchesPostRoute = require("./src/matches.routes"); // /add-match
-
-// GET routes
-
-const newsGetRoute = require("./src/news.get"); // /news
-const teamsGetRoute = require("./src/teams.get"); // /teams
-const playersGetRoute = require("./src/players.get"); // /players
-const matchesGetRoute = require("./src/matches.get"); // /matches
+app.use(cors()); // Разрешаем запросы с фронтенда (localhost:5173 и др.)
+app.use(express.json()); // Позволяет читать JSON данные из POST/PUT запросов
 
 // ==================
-// Подключение маршрутов
+// 2. Импорт маршрутов
 // ==================
-
-app.use("/", newsPostRoute);
-app.use("/", teamsPostRoute);
-app.use("/", playersPostRoute);
-app.use("/", matchesPostRoute);
-
-app.use("/", newsGetRoute);
-app.use("/", teamsGetRoute);
-app.use("/", playersGetRoute);
-app.use("/", matchesGetRoute);
+// Мы подключаем файлы, которые содержат ВСЕ операции (GET, POST, PUT, DELETE)
+const newsRoutes = require("./src/news.routes");
+const teamsRoutes = require("./src/teams.routes");
+const playersRoutes = require("./src/players.routes");
+const matchesRoutes = require("./src/matches.routes");
 
 // ==================
-// Тестовый роут
+// 3. Подключение маршрутов (REST API)
+// ==================
+
+// Теперь мы задаем "префикс" для каждого роутера.
+// Например, в newsRoutes мы писали router.get("/"), а здесь добавляем "/news".
+// Итоговый адрес получится: /news
+
+app.use("/news", newsRoutes); // Доступно: GET /news, POST /news, PUT /news/:id...
+app.use("/teams", teamsRoutes); // Доступно: GET /teams, POST /teams...
+app.use("/players", playersRoutes); // Доступно: GET /players...
+app.use("/matches", matchesRoutes); // Доступно: GET /matches...
+
+// ==================
+// 4. Главная страница (Инфо)
 // ==================
 app.get("/", (req, res) => {
   res.send(`
-    <h1>⚽ Footbol Backend работает!</h1>
-    <p>Доступные эндпоинты:</p>
-    <ul>
-      <li>GET /users</li>
-      <li>POST /add-user</li>
-      <li>GET /news</li>
-      <li>POST /add-news</li>
-      <li>GET /teams</li>
-      <li>POST /add-team</li>
-      <li>GET /players</li>
-      <li>POST /add-player</li>
-      <li>GET /matches</li>
-      <li>POST /add-match</li>
-    </ul>
+    <div style="font-family: sans-serif; padding: 20px;">
+      <h1 style="color: #2c3e50;">⚽ Footbol Backend работает!</h1>
+      <p>API переведено на REST-архитектуру.</p>
+      
+      <h3>📂 Доступные ресурсы:</h3>
+      <ul>
+        <li><a href="/news">/news</a> — Новости</li>
+        <li><a href="/teams">/teams</a> — Сборные</li>
+        <li><a href="/players">/players</a> — Игроки</li>
+        <li><a href="/matches">/matches</a> — Матчи</li>
+      </ul>
+
+      <p><strong>Для каждого ресурса доступны методы:</strong></p>
+      <code>
+        GET    /ресурс       (Список)<br>
+        POST   /ресурс       (Создать)<br>
+        PUT    /ресурс/:id   (Обновить)<br>
+        DELETE /ресурс/:id   (Удалить)
+      </code>
+    </div>
   `);
 });
 
 // ==================
-// Запуск сервера
+// 5. Запуск сервера
 // ==================
 app.listen(port, "0.0.0.0", () => {
-  console.log(`🚀 Backend running at http://localhost:${port}`);
+  console.log(`🚀 Server is running at http://localhost:${port}`);
+  console.log(`📝 Mode: Docker / Localhost`);
 });

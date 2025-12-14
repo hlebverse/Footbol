@@ -2,48 +2,71 @@ const express = require("express");
 const router = express.Router();
 const prisma = require("./prisma");
 
-router.get("/add-player", (req, res) => {
-  res.send(`
-    <h1>POST endpoint</h1>
-    <pre>
-{
-  "name": "Mbappe",
-  "position": "Forward",
-  "age": 25,
-  "teamId": 1
-}
-    </pre>
-  `);
+// GET
+router.get("/", async (req, res) => {
+  try {
+    const players = await prisma.player.findMany({
+      orderBy: { id: "desc" },
+      include: { team: true }, // Подтягиваем инфо о команде
+    });
+    res.json(players);
+  } catch (e) {
+    res.status(500).json({ error: "Ошибка сервера" });
+  }
 });
 
-router.post("/add-player", async (req, res) => {
+// POST
+router.post("/", async (req, res) => {
   try {
     const { name, position, age, teamId } = req.body;
-
-    if (!name || !position || !age || !teamId) {
-      return res.status(400).json({
-        error: "Все поля обязательны",
-      });
-    }
+    if (!name || !teamId)
+      return res.status(400).json({ error: "Имя и команда обязательны" });
 
     const player = await prisma.player.create({
       data: {
         name,
         position,
-        age: parseInt(age),
-        teamId: parseInt(teamId),
+        age: Number(age),
+        teamId: Number(teamId),
+      },
+      include: { team: true },
+    });
+    res.json(player);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Ошибка создания" });
+  }
+});
+
+// PUT (Редактирование)
+router.put("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, position, age, teamId } = req.body;
+
+    const updated = await prisma.player.update({
+      where: { id: Number(id) },
+      data: {
+        name,
+        position,
+        age: Number(age),
+        teamId: Number(teamId),
       },
     });
+    res.json(updated);
+  } catch (e) {
+    res.status(500).json({ error: "Ошибка обновления" });
+  }
+});
 
-    console.log("✅ Игрок создан:", player);
-
-    res.status(201).json({
-      message: "Игрок успешно добавлен",
-      player,
-    });
-  } catch (error) {
-    console.error("❌ Ошибка:", error);
-    res.status(500).json({ error: "Ошибка сервера" });
+// DELETE
+router.delete("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.player.delete({ where: { id: Number(id) } });
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: "Ошибка удаления" });
   }
 });
 
