@@ -1,8 +1,14 @@
+"use client"; // <-- ОБЯЗАТЕЛЬНО! Делает компонент Клиентским
+
 import { useEffect, useState } from "react";
 
-const API_URL = "http://localhost:8000";
+// Получаем URL бэкенда из переменной окружения Next.js
+// Next.js автоматически подставит эту переменную из .env.local
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-// Конфигурация полей (Схема)
+// =========================================================================
+// КОНФИГУРАЦИЯ СХЕМЫ (SCHEMA)
+// =========================================================================
 const SCHEMA = {
   news: {
     label: "Новости",
@@ -44,14 +50,17 @@ const SCHEMA = {
   },
 };
 
-function AdminPanel() {
+// =========================================================================
+// ГЛАВНЫЙ КОМПОНЕНТ (AdminPanel)
+// =========================================================================
+export default function AdminPanel() {
   const [tab, setTab] = useState("news");
   const [data, setData] = useState([]);
-  const [teamsList, setTeamsList] = useState([]); // Справочник команд для выпадающих списков
+  const [teamsList, setTeamsList] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({});
 
-  // 1. Загрузка списка команд (нужен для Select-ов в Игроках и Матчах)
+  // 1. Загрузка списка команд (справочник)
   const loadTeams = async () => {
     try {
       const res = await fetch(`${API_URL}/teams`);
@@ -64,7 +73,7 @@ function AdminPanel() {
     }
   };
 
-  // 2. Загрузка данных текущей вкладки
+  // 2. Загрузка основных данных
   const loadData = async () => {
     try {
       const res = await fetch(`${API_URL}/${tab}`);
@@ -79,31 +88,27 @@ function AdminPanel() {
     }
   };
 
-  // При загрузке страницы один раз берем список команд
+  // Эффект: Загрузка команд при монтировании
   useEffect(() => {
     loadTeams();
   }, []);
 
-  // При смене вкладки обновляем таблицу и сбрасываем форму
+  // Эффект: Загрузка данных при смене вкладки
   useEffect(() => {
     setEditingId(null);
     setForm({});
     loadData();
   }, [tab]);
 
-  // Хелпер: Получить имя команды по ID из справочника
+  // Хелпер: Получить имя команды по ID
   const getTeamName = (id) => {
     const team = teamsList.find((t) => t.id === id);
-    return team ? team.name : id; // Если не нашли, вернем ID
+    return team ? team.name : id;
   };
 
   // ---------- СОХРАНЕНИЕ (CREATE / UPDATE) ----------
   const submitForm = async () => {
     const method = editingId ? "PUT" : "POST";
-
-    // Генерируем красивый REST URL
-    // POST: http://localhost:8000/matches
-    // PUT:  http://localhost:8000/matches/15
     let url = `${API_URL}/${tab}`;
     if (editingId) url += `/${editingId}`;
 
@@ -120,11 +125,9 @@ function AdminPanel() {
         return;
       }
 
-      // Успех
       setEditingId(null);
       setForm({});
-      loadData(); // Перечитываем таблицу
-      // Если добавили новую команду, стоит обновить справочник команд
+      loadData();
       if (tab === "teams") loadTeams();
     } catch (e) {
       alert("Ошибка сети");
@@ -151,10 +154,8 @@ function AdminPanel() {
 
   // ---------- НАЧАЛО РЕДАКТИРОВАНИЯ ----------
   const startEdit = (item) => {
-    // Копируем объект, чтобы не мутировать состояние напрямую
     let safeItem = { ...item };
 
-    // HTML5 input datetime-local требует формат "YYYY-MM-DDTHH:MM"
     if (safeItem.matchDate) {
       safeItem.matchDate = new Date(safeItem.matchDate)
         .toISOString()
@@ -169,7 +170,6 @@ function AdminPanel() {
   const renderInput = (field) => {
     const val = form[field.name] !== undefined ? form[field.name] : "";
 
-    // 1. Выпадающий список (Select)
     if (field.type === "select" && field.source === "teams") {
       return (
         <select
@@ -189,7 +189,6 @@ function AdminPanel() {
       );
     }
 
-    // 2. Большое текстовое поле (Textarea)
     if (field.type === "textarea") {
       return (
         <textarea
@@ -200,13 +199,11 @@ function AdminPanel() {
       );
     }
 
-    // 3. Обычный инпут (Text, Number, Date)
     return (
       <input
         type={field.type}
         value={val}
         onChange={(e) => {
-          // Если поле числовое, парсим строку в число
           const value =
             field.type === "number"
               ? e.target.value
@@ -222,11 +219,9 @@ function AdminPanel() {
 
   // ---------- РЕНДЕР ЯЧЕЙКИ ТАБЛИЦЫ ----------
   const renderCell = (item, key) => {
-    // Если колонка - это ID команды, показываем её Имя
     if (key === "teamId" || key === "homeTeamId" || key === "awayTeamId") {
       return <b>{getTeamName(item[key])}</b>;
     }
-    // Форматирование даты
     if ((key === "matchDate" || key === "createdAt") && item[key]) {
       return new Date(item[key]).toLocaleString("ru-RU", {
         day: "numeric",
@@ -238,6 +233,9 @@ function AdminPanel() {
     return item[key];
   };
 
+  // =========================================================================
+  // РЕНДЕР (JSX)
+  // =========================================================================
   return (
     <div
       style={{
@@ -247,7 +245,7 @@ function AdminPanel() {
       }}
     >
       <h1 style={{ textAlign: "center", color: "#333" }}>
-        ⚽ Панель Администратора
+        ⚽ Админ-панель Footbol (Тестирование)
       </h1>
 
       {/* Кнопки вкладок */}
@@ -404,7 +402,7 @@ function AdminPanel() {
   );
 }
 
-// Простые стили
+// Стили (оставлены в файле для простоты, в реальном проекте выносить в CSS)
 const inputStyle = {
   width: "100%",
   padding: "8px 10px",
@@ -432,5 +430,3 @@ const actionBtnStyle = {
   fontSize: "18px",
   marginLeft: "10px",
 };
-
-export default AdminPanel;
